@@ -1,0 +1,179 @@
+# Classes
+class Card
+
+	attr_reader :suite, :face_value
+
+	def initialize(card_value)
+		case card_value
+		when 0..12
+			@suite = :Spades
+		when 13..25
+			@suite = :Clubs
+		when 26..38
+			@suite = :Diamonds
+		when 39..51
+			@suite = :Hearts
+		end
+		@face_value = card_value%13 + 1
+	end
+
+	def to_s
+		case face_value
+		when 11
+			"J of #{@suite}"
+		when 12
+			"Q of #{@suite}"
+		when 13
+			"K of #{@suite}"
+		when 1
+			"A of #{@suite}"
+		else
+			"#{@face_value} of #{@suite}"
+		end
+	end
+end
+
+
+class Deck
+
+	attr_reader :cards
+
+	def initialize
+		@cards = []
+		(0...52).to_a.shuffle.each { |card_value| @cards.push Card.new card_value }
+	end
+
+	def to_s
+		s = "The deck contains: \n"
+		@cards.each { |card| s += "#{card.to_s} \n"}
+		return s
+	end
+
+	def draw
+		@cards.pop
+	end
+end
+
+class Hand
+
+	attr_reader :cards
+
+	def initialize(deck)
+		@cards = []
+		2.times {@cards.push deck.draw}
+	end
+
+	def to_s
+		s = "hand contains: \n"
+		@cards.each { |card| s += "#{card.to_s} \n"}
+		return s
+	end
+
+	def hit(deck)
+		@cards.push deck.draw
+	end
+
+	def sum_hand
+		sum = 0
+		@cards.each { |card| sum+=card.face_value}
+		return sum
+	end
+
+	def over?
+		self.sum_hand > 21
+	end
+
+	def blackjack?
+		self.sum_hand == 21
+	end
+
+	def better?(dealer_hand)
+		self.sum_hand > dealer_hand.sum_hand or dealer_hand.over? unless self.over?
+	end
+end
+
+class Game
+
+	attr_reader :deck, :your_hand, :dealer_hand, :youre_done
+
+	def initialize
+		@deck = Deck.new
+		@your_hand = Hand.new(@deck)
+		@dealer_hand = Hand.new(@deck)
+		@youre_done = false
+	end
+
+	def choose_hit
+		puts "Your " + @your_hand.to_s
+		if @your_hand.over?
+			@youre_done = true
+			return
+		end 
+		print "Hit? (y/n): "
+		response = gets.chomp
+		case response
+		when 'y'
+			@your_hand.hit @deck
+		when 'n'
+			@youre_done = true
+		else
+			puts "Invalid response!"
+			choose_hit
+		end
+	end
+
+	def round
+		choose_hit until @youre_done
+		if @your_hand.blackjack?
+			puts "BLACKJACK! You win." 
+		elsif @your_hand.over? 
+			puts "Bust. You lost." 
+		else
+			dealer_hand.hit @deck until dealer_hand.sum_hand > 17
+			puts "Dealer's " + @dealer_hand.to_s
+			if @dealer_hand.over?
+				puts "Bust. Dealer lost, you win." 
+			elsif @your_hand.better? dealer_hand
+				puts "You win." 
+			else
+				puts "Dealer wins." 
+			end
+		end
+		@deck = Deck.new
+		@your_hand = Hand.new(@deck)
+		@dealer_hand = Hand.new(@deck)
+		@youre_done = false
+	end
+
+	def play
+		print "Welcome to Blackjack. "
+		response = 'y'
+		while response == 'y'
+			round
+			print "\nPlay again? (y/n): "
+			response = gets.chomp
+			case response
+			when 'y'
+				print ""
+			when 'n'
+				print "Thank you for playing."
+			else
+				puts "Invalid response! Play again? (y/n): "
+				response = gets.chomp
+			end
+		end
+	end
+end
+
+Game.new.play
+
+
+
+
+
+
+
+
+
+
+
